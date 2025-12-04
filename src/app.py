@@ -1,55 +1,26 @@
 from fastapi import FastAPI
+import os
+import redis
 
-app = FastAPI(title="Simple DevOps Demo Service")
+app = FastAPI()
 
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 
-# -------------------------------------------------------------------
-# Logik-Funktion (wird von API und Tests verwendet)
-# -------------------------------------------------------------------
+r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+
 
 def add(a: int, b: int) -> int:
-    """Einfache Beispiel-Funktion für CI-Tests und API."""
     return a + b
-
-
-# -------------------------------------------------------------------
-# API ROUTES
-# -------------------------------------------------------------------
-
-@app.get("/")
-def root():
-    """
-    Root-Endpoint, damit / nicht 404 liefert.
-    Liefert einfache Statusinformationen.
-    """
-    return {"message": "Service läuft", "endpoints": ["/health", "/add"]}
 
 
 @app.get("/health")
 def health():
-    """Health-Check für Monitoring und K8s-Liveness."""
-    return {"status": "ok"}
+    try:
+        r.ping()
+        redis_status = "ok"
+    except Exception:
+        redis_status = "unreachable"
 
-
-@app.get("/add")
-def add_endpoint(a: int, b: int):
-    """
-    Addition über URL-Parameter:
-    Beispiel: /add?a=2&b=3
-    """
-    result = add(a, b)
-    return {"a": a, "b": b, "result": result}
-
-
-# -------------------------------------------------------------------
-# Lokaler Aufruf (python app.py), NICHT für Uvicorn/Docker
-# -------------------------------------------------------------------
-
-def main():
-    """Wird nur ausgeführt, wenn das Skript direkt gestartet wird."""
-    result = add(2, 3)
-    print(f"App läuft lokal: 2 + 3 = {result}")
-
-
-if __name__ == "__main__":
-    main()
+    return {"status": "ok", "redis": redis_status}
