@@ -2,3 +2,5 @@ pytest
 fastapi
 uvicorn[standard]
 redis
+sqlalchemy
+psycopg2-binary
